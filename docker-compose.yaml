@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  server: # nginx server container untuk menampung request yang masuk
+    image: "nginx:stable-alpine" # slim Linux OS
+    ports:
+      - "8000:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+      - mysql
+  php: # container untuk menjalankan kode PHP (framework Laravel)
+    build: 
+      context: ./dockerfiles
+      dockerfile: php.dockerfile
+    volumes:
+      - ./src:/var/www/html:delegated # bind mount folder src dengan folder pada container
+  mysql: # container database
+    image: "mysql:5.7"
+    env_file:
+      - ./env/mysql.env
+  composer:
+    build: 
+      context: ./dockerfiles
+      dockerfile: composer.dockerfile
+    volumes:
+      - ./src:/var/www/html
+  artisan:
+    build: 
+      context: ./dockerfiles
+      dockerfile: php.dockerfile
+    volumes:
+      - ./src:/var/www/html
+    entrypoint: ["php", "/var/www/html/artisan"]
+  npm:
+    image: node:14
+    working_dir: /var/www/html
+    entrypoint: ["npm"]
+    volumes:
+      - ./src:/var/www/html
